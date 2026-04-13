@@ -70,7 +70,10 @@
             <pre>${escapeHTML(item.prompt || "")}</pre>
             <div class="row">
               <button class="btn small" data-copy="${item.id}">一键复制</button>
-              <button class="btn small secondary" data-del="${item.id}">删除</button>
+              <div>
+                <button class="btn small" data-edit="${item.id}">编辑</button>
+                <button class="btn small secondary" data-del="${item.id}">删除</button>
+              </div>
             </div>
           </div>
         </article>
@@ -89,6 +92,26 @@
         btn.onclick = () => {
           const target = db.prompts.find((x) => x.id === Number(btn.dataset.copy));
           copyText(target ? target.prompt : "", btn);
+        };
+      });
+
+      list.querySelectorAll("button[data-edit]").forEach((btn) => {
+        btn.onclick = () => {
+          const id = Number(btn.dataset.edit);
+          const item = db.prompts.find((x) => x.id === id);
+          if (!item) return;
+          const title = prompt("标题：", item.title) ?? item.title;
+          const category = prompt("分类：", item.category || "未分类") ?? item.category;
+          const summary = prompt("短说明：", item.summary || "") ?? item.summary;
+          const fullPrompt = prompt("完整 Prompt：", item.prompt || "") ?? item.prompt;
+          if (!String(title).trim() || !String(fullPrompt).trim()) return alert("标题和 Prompt 不能为空");
+          item.title = String(title).trim();
+          item.category = String(category || "未分类").trim() || "未分类";
+          item.summary = String(summary || "").trim();
+          item.prompt = String(fullPrompt).trim();
+          saveDB(db);
+          renderCategories();
+          renderList();
         };
       });
 
