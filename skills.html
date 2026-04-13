@@ -46,10 +46,31 @@
           <div class="card-tags">${(item.tags || []).map((t) => `<span class="tag">${escapeHTML(t)}</span>`).join("")}</div>
           <div class="row">
             <a class="btn small" href="${escapeHTML(item.url || "#")}" target="_blank">查看 GitHub</a>
-            <button class="btn small secondary" data-id="${item.id}">删除</button>
+            <div>
+              <button class="btn small" data-edit="${item.id}">编辑</button>
+              <button class="btn small secondary" data-id="${item.id}">删除</button>
+            </div>
           </div>
         </article>
       `).join("");
+      list.querySelectorAll("button[data-edit]").forEach((btn) => {
+        btn.onclick = () => {
+          const id = Number(btn.dataset.edit);
+          const item = db.skills.find((x) => x.id === id);
+          if (!item) return;
+          const title = prompt("Skill 名称：", item.title) ?? item.title;
+          const url = prompt("GitHub 链接：", item.url || "") ?? item.url;
+          const desc = prompt("用途说明：", item.desc || "") ?? item.desc;
+          const tagsRaw = prompt("标签（逗号分隔）：", (item.tags || []).join(",")) ?? (item.tags || []).join(",");
+          if (!String(title).trim() || !String(url).trim()) return alert("Skill 名称和链接不能为空");
+          item.title = String(title).trim();
+          item.url = String(url).trim();
+          item.desc = String(desc || "").trim();
+          item.tags = String(tagsRaw || "").split(",").map((x) => x.trim()).filter(Boolean);
+          saveDB(db);
+          render();
+        };
+      });
       list.querySelectorAll("button[data-id]").forEach((btn) => {
         btn.onclick = () => {
           db.skills = db.skills.filter((x) => x.id !== Number(btn.dataset.id));
