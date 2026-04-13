@@ -61,7 +61,10 @@
           <div class="card-tags">
             ${(item.files || []).map((f, idx) => `<button class="chip" data-id="${item.id}" data-file="${idx}">${escapeHTML(f.name)}</button>`).join("")}
           </div>
-          <button class="btn small secondary" data-del="${item.id}">删除</button>
+          <div>
+            <button class="btn small" data-edit="${item.id}">编辑</button>
+            <button class="btn small secondary" data-del="${item.id}">删除</button>
+          </div>
         </article>
       `).join("");
 
@@ -77,6 +80,21 @@
           a.download = file.name;
           a.click();
           URL.revokeObjectURL(url);
+        };
+      });
+
+      list.querySelectorAll("button[data-edit]").forEach((btn) => {
+        btn.onclick = () => {
+          const id = Number(btn.dataset.edit);
+          const item = db.ideas.find((x) => x.id === id);
+          if (!item) return;
+          const title = prompt("Idea 标题：", item.title) ?? item.title;
+          const content = prompt("内容：", item.content || "") ?? item.content;
+          if (!String(title).trim()) return alert("标题不能为空");
+          item.title = String(title).trim();
+          item.content = String(content || "").trim();
+          saveDB(db);
+          render();
         };
       });
 
