@@ -41,7 +41,10 @@
           <div class="muted">文件：${escapeHTML(item.fileName || "inline.html")}</div>
           <div class="row">
             <button class="btn small" data-export="${item.id}">导出为 HTML</button>
-            <button class="btn small secondary" data-del="${item.id}">删除</button>
+            <div>
+              <button class="btn small" data-edit="${item.id}">编辑标题</button>
+              <button class="btn small secondary" data-del="${item.id}">删除</button>
+            </div>
           </div>
         </article>
       `).join("");
@@ -50,6 +53,19 @@
         btn.onclick = () => {
           const item = db.knowledge.find((x) => x.id === Number(btn.dataset.export));
           if (item) downloadHTMLFile(item.title, item.html || "");
+        };
+      });
+
+      list.querySelectorAll("button[data-edit]").forEach((btn) => {
+        btn.onclick = () => {
+          const id = Number(btn.dataset.edit);
+          const item = db.knowledge.find((x) => x.id === id);
+          if (!item) return;
+          const title = prompt("知识标题：", item.title) ?? item.title;
+          if (!String(title).trim()) return alert("标题不能为空");
+          item.title = String(title).trim();
+          saveDB(db);
+          render();
         };
       });
 
