@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skills 技能库</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>🧠 Skills 技能库</h1>
+        <p class="subtitle">对应 Agent 的 skills，支持导览 GitHub 项目</p>
+      </div>
+    </header>
+    <nav class="nav" id="nav"></nav>
+    <section class="panel soft">
+      <div class="toolbar">
+        <div class="muted">收藏常用 Agent Skills 或参考项目</div>
+        <button class="btn" id="toggleFormBtn">+ 新增 Skill</button>
+      </div>
+      <div class="form-pop hidden" id="formWrap">
+        <div class="form-grid">
+          <input id="title" placeholder="Skill 名称">
+          <input id="url" placeholder="GitHub 链接">
+          <input id="tags" placeholder="标签，逗号分隔">
+          <input id="desc" placeholder="用途说明">
+        </div>
+        <button class="btn space-top" id="addBtn">确认新增</button>
+      </div>
+      <div class="grid space-top" id="list"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("nav").innerHTML = navHTML("skills.html");
+    const db = loadDB();
+
+    function render() {
+      const list = document.getElementById("list");
+      list.innerHTML = db.skills.map((item) => `
+        <article class="card">
+          <h3>${escapeHTML(item.title)}</h3>
+          <p>${escapeHTML(item.desc || "")}</p>
+          <div class="card-tags">${(item.tags || []).map((t) => `<span class="tag">${escapeHTML(t)}</span>`).join("")}</div>
+          <div class="row">
+            <a class="btn small" href="${escapeHTML(item.url || "#")}" target="_blank">查看 GitHub</a>
+            <button class="btn small secondary" data-id="${item.id}">删除</button>
+          </div>
+        </article>
+      `).join("");
+      list.querySelectorAll("button[data-id]").forEach((btn) => {
+        btn.onclick = () => {
+          db.skills = db.skills.filter((x) => x.id !== Number(btn.dataset.id));
+          saveDB(db);
+          render();
+        };
+      });
+    }
+
+    document.getElementById("toggleFormBtn").onclick = () => {
+      document.getElementById("formWrap").classList.toggle("hidden");
+    };
+
+    document.getElementById("addBtn").onclick = () => {
+      const title = document.getElementById("title").value.trim();
+      const url = document.getElementById("url").value.trim();
+      const desc = document.getElementById("desc").value.trim();
+      const tags = document.getElementById("tags").value.split(",").map((x) => x.trim()).filter(Boolean);
+      if (!title || !url) return alert("Skill 名称和 GitHub 链接必填");
+      db.skills.unshift({ id: Date.now(), title, url, desc, tags });
+      saveDB(db);
+      ["title", "url", "desc", "tags"].forEach((id) => (document.getElementById(id).value = ""));
+      document.getElementById("formWrap").classList.add("hidden");
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>

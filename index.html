@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 个人站点</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>🌿 个人 AI 站点</h1>
+        <p class="subtitle">简洁软萌风格 · 多页面导航</p>
+      </div>
+      <div class="topbar-right">
+        <input id="homeSearch" class="search-input" placeholder="搜索具体内容或标签（如：GitHub、写作、国产）">
+      </div>
+    </header>
+    <nav class="nav" id="nav"></nav>
+    <section class="panel">
+      <div class="stats-grid" id="stats"></div>
+      <div class="search-results hidden" id="searchResults"></div>
+      <div class="grid" id="homeCards">
+        <a class="card" data-name="AI 产品库 产品 标签 筛选 外链" href="products.html" style="text-decoration:none;color:inherit;">
+          <h3>AI 产品库</h3>
+          <p>卡片式布局，点击卡片直接跳转外链，支持标签分类筛选。</p>
+        </a>
+        <a class="card" data-name="功能提示词 prompt 手风琴 一键复制 分类" href="prompts.html" style="text-decoration:none;color:inherit;">
+          <h3>功能提示词</h3>
+          <p>手风琴折叠面板，支持一键复制，展开可看完整 Prompt 结构。</p>
+        </a>
+        <a class="card" data-name="Skills 技能库 Agent github 项目" href="skills.html" style="text-decoration:none;color:inherit;">
+          <h3>Skills 技能库</h3>
+          <p>对应 Agent skills，支持收藏并导览 GitHub 项目。</p>
+        </a>
+        <a class="card" data-name="Idea 想法 时间 文件 上传 python" href="ideas.html" style="text-decoration:none;color:inherit;">
+          <h3>Idea</h3>
+          <p>按时间顺序记录想法，支持上传 python 等文件并保存。</p>
+        </a>
+        <a class="card" data-name="知识管理 html 文件 上传 导出" href="knowledge.html" style="text-decoration:none;color:inherit;">
+          <h3>知识管理</h3>
+          <p>维护标题与 HTML 内容，可导出为 `.html` 文件。</p>
+        </a>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("nav").innerHTML = navHTML("index.html");
+    const db = loadDB();
+    const stats = [
+      { label: "产品数", count: (db.products || []).length },
+      { label: "Prompt 数", count: (db.prompts || []).length },
+      { label: "知识条目数", count: (db.knowledge || []).length }
+    ];
+    document.getElementById("stats").innerHTML = stats
+      .map((s) => `<div class="stat-card"><div class="k">${s.count}</div><div class="t">${s.label}</div></div>`)
+      .join("");
+
+    const searchInput = document.getElementById("homeSearch");
+    const searchResults = document.getElementById("searchResults");
+    const cards = Array.from(document.querySelectorAll("#homeCards .card"));
+    
+    function makeSearchSource() {
+      const items = [];
+      (db.products || []).forEach((item) => {
+        items.push({
+          page: "products.html",
+          module: "AI 产品库",
+          title: item.title || "",
+          text: [item.title, item.desc, ...(item.tags || []), item.url].join(" "),
+          tags: item.tags || []
+        });
+      });
+      (db.prompts || []).forEach((item) => {
+        items.push({
+          page: "prompts.html",
+          module: "功能提示词",
+          title: item.title || "",
+          text: [item.title, item.category, item.summary, item.prompt].join(" "),
+          tags: [item.category || "未分类"]
+        });
+      });
+      (db.skills || []).forEach((item) => {
+        items.push({
+          page: "skills.html",
+          module: "Skills 技能库",
+          title: item.title || "",
+          text: [item.title, item.desc, ...(item.tags || []), item.url].join(" "),
+          tags: item.tags || []
+        });
+      });
+      (db.ideas || []).forEach((item) => {
+        items.push({
+          page: "ideas.html",
+          module: "Idea",
+          title: item.title || "",
+          text: [item.title, item.content, ...(item.files || []).map((f) => f.name)].join(" "),
+          tags: ["想法", "文件"]
+        });
+      });
+      (db.knowledge || []).forEach((item) => {
+        items.push({
+          page: "knowledge.html",
+          module: "知识管理",
+          title: item.title || "",
+          text: [item.title, item.fileName].join(" "),
+          tags: ["html", "知识"]
+        });
+      });
+      return items;
+    }
+
+    searchInput.addEventListener("input", () => {
+      const keyword = searchInput.value.trim().toLowerCase();
+      if (!keyword) {
+        cards.forEach((card) => (card.style.display = ""));
+        searchResults.classList.add("hidden");
+        searchResults.innerHTML = "";
+        return;
+      }
+
+      cards.forEach((card) => (card.style.display = "none"));
+      const results = makeSearchSource().filter((item) => item.text.toLowerCase().includes(keyword));
+      searchResults.classList.remove("hidden");
+      searchResults.innerHTML = results.length
+        ? results.slice(0, 12).map((item) => `
+            <a class="search-result-item" href="${item.page}" style="text-decoration:none;color:inherit;display:block;">
+              <div><strong>${escapeHTML(item.title || "未命名条目")}</strong></div>
+              <div class="meta">${escapeHTML(item.module)} · 标签：${escapeHTML((item.tags || []).join(" / ") || "无")}</div>
+            </a>
+          `).join("")
+        : `<div class="search-result-item"><div>未找到匹配内容</div><div class="meta">试试标题、标签或描述关键词</div></div>`;
+    });
+  </script>
+</body>
+</html>

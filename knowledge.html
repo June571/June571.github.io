@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>知识管理</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>📘 知识管理</h1>
+        <p class="subtitle">标题 + HTML 内容保存，支持导出 html 文件</p>
+      </div>
+    </header>
+    <nav class="nav" id="nav"></nav>
+    <section class="panel soft">
+      <div class="toolbar">
+        <div class="muted">上传你已经写好的 HTML 文件进行管理</div>
+        <button class="btn" id="toggleFormBtn">+ 新增知识</button>
+      </div>
+      <div class="form-pop hidden" id="formWrap">
+        <input id="title" placeholder="知识条目标题（可留空，默认文件名）">
+        <input class="space-top" id="htmlFile" type="file" accept=".html,.htm,text/html">
+        <button class="btn space-top" id="addBtn">确认上传</button>
+      </div>
+      <div class="space-top" id="list"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("nav").innerHTML = navHTML("knowledge.html");
+    const db = loadDB();
+
+    function render() {
+      const list = document.getElementById("list");
+      list.innerHTML = db.knowledge.map((item) => `
+        <article class="card">
+          <h3>${escapeHTML(item.title)}</h3>
+          <div class="muted">文件：${escapeHTML(item.fileName || "inline.html")}</div>
+          <div class="row">
+            <button class="btn small" data-export="${item.id}">导出为 HTML</button>
+            <button class="btn small secondary" data-del="${item.id}">删除</button>
+          </div>
+        </article>
+      `).join("");
+
+      list.querySelectorAll("button[data-export]").forEach((btn) => {
+        btn.onclick = () => {
+          const item = db.knowledge.find((x) => x.id === Number(btn.dataset.export));
+          if (item) downloadHTMLFile(item.title, item.html || "");
+        };
+      });
+
+      list.querySelectorAll("button[data-del]").forEach((btn) => {
+        btn.onclick = () => {
+          db.knowledge = db.knowledge.filter((x) => x.id !== Number(btn.dataset.del));
+          saveDB(db);
+          render();
+        };
+      });
+    }
+
+    document.getElementById("toggleFormBtn").onclick = () => {
+      document.getElementById("formWrap").classList.toggle("hidden");
+    };
+
+    document.getElementById("addBtn").onclick = async () => {
+      const title = document.getElementById("title").value.trim();
+      const fileInput = document.getElementById("htmlFile");
+      const file = fileInput.files[0];
+      if (!file) return alert("请先选择 HTML 文件");
+      const html = await file.text();
+      const finalTitle = title || file.name.replace(/\.(html|htm)$/i, "");
+      db.knowledge.unshift({ id: Date.now(), title: finalTitle, fileName: file.name, html });
+      saveDB(db);
+      document.getElementById("title").value = "";
+      fileInput.value = "";
+      document.getElementById("formWrap").classList.add("hidden");
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>

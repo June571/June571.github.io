@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>功能提示词</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>🪄 功能提示词</h1>
+        <p class="subtitle">手风琴折叠 · 一键复制 · 分类筛选</p>
+      </div>
+    </header>
+    <nav class="nav" id="nav"></nav>
+    <section class="panel soft">
+      <div class="toolbar">
+        <div class="chips" id="categoryFilter"></div>
+        <button class="btn" id="toggleFormBtn">+ 新增提示词</button>
+      </div>
+      <div class="form-pop hidden" id="formWrap">
+        <div class="form-grid">
+          <input id="title" placeholder="提示词标题">
+          <input id="category" placeholder="分类（如：写作、编程）">
+        </div>
+        <textarea class="space-top" id="summary" placeholder="短说明"></textarea>
+        <textarea class="space-top" id="prompt" placeholder="完整 Prompt 结构"></textarea>
+        <button class="btn space-top" id="addBtn">确认新增</button>
+      </div>
+      <div class="space-top" id="list"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("nav").innerHTML = navHTML("prompts.html");
+    const db = loadDB();
+    let active = "全部";
+
+    function categories() {
+      const set = new Set(["全部"]);
+      db.prompts.forEach((i) => set.add(i.category || "未分类"));
+      return Array.from(set);
+    }
+
+    function renderCategories() {
+      const el = document.getElementById("categoryFilter");
+      el.innerHTML = categories().map((c) => `<button class="chip ${c === active ? "active" : ""}" data-c="${escapeHTML(c)}">${escapeHTML(c)}</button>`).join("");
+      el.querySelectorAll(".chip").forEach((chip) => {
+        chip.onclick = () => {
+          active = chip.dataset.c;
+          renderCategories();
+          renderList();
+        };
+      });
+    }
+
+    function renderList() {
+      const list = document.getElementById("list");
+      const items = db.prompts.filter((x) => active === "全部" || (x.category || "未分类") === active);
+      list.innerHTML = items.map((item) => `
+        <article class="accordion-item">
+          <button class="accordion-header" data-id="${item.id}">
+            <span>${escapeHTML(item.title)} <span class="muted">#${escapeHTML(item.category || "未分类")}</span></span>
+            <span>展开</span>
+          </button>
+          <div class="accordion-body" id="body-${item.id}">
+            <p>${escapeHTML(item.summary || "")}</p>
+            <pre>${escapeHTML(item.prompt || "")}</pre>
+            <div class="row">
+              <button class="btn small" data-copy="${item.id}">一键复制</button>
+              <button class="btn small secondary" data-del="${item.id}">删除</button>
+            </div>
+          </div>
+        </article>
+      `).join("");
+
+      list.querySelectorAll(".accordion-header").forEach((header) => {
+        header.onclick = () => {
+          const body = document.getElementById(`body-${header.dataset.id}`);
+          const open = body.style.display === "block";
+          body.style.display = open ? "none" : "block";
+          header.lastElementChild.textContent = open ? "展开" : "收起";
+        };
+      });
+
+      list.querySelectorAll("button[data-copy]").forEach((btn) => {
+        btn.onclick = () => {
+          const target = db.prompts.find((x) => x.id === Number(btn.dataset.copy));
+          copyText(target ? target.prompt : "", btn);
+        };
+      });
+
+      list.querySelectorAll("button[data-del]").forEach((btn) => {
+        btn.onclick = () => {
+          db.prompts = db.prompts.filter((x) => x.id !== Number(btn.dataset.del));
+          saveDB(db);
+          renderCategories();
+          renderList();
+        };
+      });
+    }
+
+    document.getElementById("toggleFormBtn").onclick = () => {
+      document.getElementById("formWrap").classList.toggle("hidden");
+    };
+
+    document.getElementById("addBtn").onclick = () => {
+      const title = document.getElementById("title").value.trim();
+      const category = document.getElementById("category").value.trim() || "未分类";
+      const summary = document.getElementById("summary").value.trim();
+      const prompt = document.getElementById("prompt").value.trim();
+      if (!title || !prompt) return alert("标题和完整 Prompt 必填");
+      db.prompts.unshift({ id: Date.now(), title, category, summary, prompt });
+      saveDB(db);
+      ["title", "category", "summary", "prompt"].forEach((id) => (document.getElementById(id).value = ""));
+      document.getElementById("formWrap").classList.add("hidden");
+      renderCategories();
+      renderList();
+    };
+
+    renderCategories();
+    renderList();
+  </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 产品库</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>🧩 AI 产品库</h1>
+        <p class="subtitle">卡片点击即跳转外链，支持标签过滤</p>
+      </div>
+    </header>
+    <nav class="nav" id="nav"></nav>
+    <section class="panel soft">
+      <div class="toolbar">
+        <div class="chips" id="tagFilter"></div>
+        <button class="btn" id="toggleFormBtn">+ 新增产品</button>
+      </div>
+      <div class="form-pop hidden" id="formWrap">
+        <div class="form-grid">
+          <input id="title" placeholder="产品名">
+          <input id="url" placeholder="外链地址（https://...）">
+          <input id="tags" placeholder="标签，逗号分隔（如：写作,国产）">
+          <input id="desc" placeholder="简介">
+        </div>
+        <button class="btn space-top" id="addBtn">确认新增</button>
+      </div>
+      <div class="grid space-top" id="list"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("nav").innerHTML = navHTML("products.html");
+    const db = loadDB();
+    let activeTag = "全部";
+
+    function allTags() {
+      const set = new Set(["全部"]);
+      db.products.forEach((i) => (i.tags || []).forEach((t) => set.add(t)));
+      return Array.from(set);
+    }
+
+    function renderTags() {
+      const tags = allTags();
+      const filter = document.getElementById("tagFilter");
+      filter.innerHTML = tags
+        .map((tag) => `<button class="chip ${tag === activeTag ? "active" : ""}" data-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`)
+        .join("");
+      filter.querySelectorAll(".chip").forEach((chip) => {
+        chip.onclick = () => {
+          activeTag = chip.dataset.tag;
+          renderTags();
+          renderList();
+        };
+      });
+    }
+
+    function renderList() {
+      const list = document.getElementById("list");
+      const items = db.products.filter((item) => activeTag === "全部" || (item.tags || []).includes(activeTag));
+      list.innerHTML = items
+        .map((item) => `
+          <article class="card">
+            <h3>${escapeHTML(item.title)}</h3>
+            <p>${escapeHTML(item.desc || "")}</p>
+            <div class="card-tags">${(item.tags || []).map((tag) => `<span class="tag">${escapeHTML(tag)}</span>`).join("")}</div>
+            <div class="row">
+              <span class="muted">${escapeHTML(item.url || "")}</span>
+              <button class="btn small secondary" data-id="${item.id}">删除</button>
+            </div>
+          </article>
+        `)
+        .join("");
+
+      list.querySelectorAll(".card").forEach((card, idx) => {
+        const item = items[idx];
+        card.onclick = (e) => {
+          if (e.target.tagName === "BUTTON") return;
+          if (item.url) window.open(item.url, "_blank");
+        };
+        card.style.cursor = "pointer";
+      });
+
+      list.querySelectorAll("button[data-id]").forEach((btn) => {
+        btn.onclick = () => {
+          db.products = db.products.filter((x) => x.id !== Number(btn.dataset.id));
+          saveDB(db);
+          renderTags();
+          renderList();
+        };
+      });
+    }
+
+    document.getElementById("toggleFormBtn").onclick = () => {
+      document.getElementById("formWrap").classList.toggle("hidden");
+    };
+
+    document.getElementById("addBtn").onclick = () => {
+      const title = document.getElementById("title").value.trim();
+      const url = document.getElementById("url").value.trim();
+      const desc = document.getElementById("desc").value.trim();
+      const tags = document.getElementById("tags").value.split(",").map((x) => x.trim()).filter(Boolean);
+      if (!title || !url) return alert("产品名和链接必填");
+      db.products.unshift({ id: Date.now(), title, url, desc, tags });
+      saveDB(db);
+      ["title", "url", "desc", "tags"].forEach((id) => (document.getElementById(id).value = ""));
+      document.getElementById("formWrap").classList.add("hidden");
+      renderTags();
+      renderList();
+    };
+
+    renderTags();
+    renderList();
+  </script>
+</body>
+</html>

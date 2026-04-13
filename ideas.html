@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Idea</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>💡 Idea</h1>
+        <p class="subtitle">按时间顺序展示，支持上传 python 等文件</p>
+      </div>
+    </header>
+    <nav class="nav" id="nav"></nav>
+    <section class="panel soft">
+      <div class="toolbar">
+        <div class="muted">记录灵感并关联代码文件</div>
+        <button class="btn" id="toggleFormBtn">+ 新增 Idea</button>
+      </div>
+      <div class="form-pop hidden" id="formWrap">
+        <input id="title" placeholder="Idea 标题">
+        <textarea class="space-top" id="content" placeholder="内容描述"></textarea>
+        <input class="space-top" id="files" type="file" multiple>
+        <button class="btn space-top" id="addBtn">确认新增</button>
+      </div>
+      <div class="timeline space-top" id="list"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("nav").innerHTML = navHTML("ideas.html");
+    const db = loadDB();
+
+    async function readFiles(files) {
+      const arr = Array.from(files || []);
+      const results = [];
+      for (const f of arr) {
+        const text = await f.text();
+        results.push({ name: f.name, type: f.type || "text/plain", content: text });
+      }
+      return results;
+    }
+
+    function fmtDate(s) {
+      return new Date(s).toLocaleString("zh-CN");
+    }
+
+    function render() {
+      const list = document.getElementById("list");
+      const sorted = [...db.ideas].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      list.innerHTML = sorted.map((item) => `
+        <article class="card">
+          <div class="row">
+            <h3>${escapeHTML(item.title)}</h3>
+            <span class="muted">${fmtDate(item.createdAt)}</span>
+          </div>
+          <p>${escapeHTML(item.content || "")}</p>
+          <div class="card-tags">
+            ${(item.files || []).map((f, idx) => `<button class="chip" data-id="${item.id}" data-file="${idx}">${escapeHTML(f.name)}</button>`).join("")}
+          </div>
+          <button class="btn small secondary" data-del="${item.id}">删除</button>
+        </article>
+      `).join("");
+
+      list.querySelectorAll("button[data-file]").forEach((btn) => {
+        btn.onclick = () => {
+          const idea = db.ideas.find((x) => x.id === Number(btn.dataset.id));
+          const file = idea?.files?.[Number(btn.dataset.file)];
+          if (!file) return;
+          const blob = new Blob([file.content], { type: file.type });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = file.name;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+      });
+
+      list.querySelectorAll("button[data-del]").forEach((btn) => {
+        btn.onclick = () => {
+          db.ideas = db.ideas.filter((x) => x.id !== Number(btn.dataset.del));
+          saveDB(db);
+          render();
+        };
+      });
+    }
+
+    document.getElementById("toggleFormBtn").onclick = () => {
+      document.getElementById("formWrap").classList.toggle("hidden");
+    };
+
+    document.getElementById("addBtn").onclick = async () => {
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
+      const files = await readFiles(document.getElementById("files").files);
+      if (!title) return alert("标题必填");
+      db.ideas.push({ id: Date.now(), title, content, createdAt: new Date().toISOString(), files });
+      saveDB(db);
+      document.getElementById("title").value = "";
+      document.getElementById("content").value = "";
+      document.getElementById("files").value = "";
+      document.getElementById("formWrap").classList.add("hidden");
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>
