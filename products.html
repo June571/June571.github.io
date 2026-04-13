@@ -70,7 +70,10 @@
             <div class="card-tags">${(item.tags || []).map((tag) => `<span class="tag">${escapeHTML(tag)}</span>`).join("")}</div>
             <div class="row">
               <span class="muted">${escapeHTML(item.url || "")}</span>
-              <button class="btn small secondary" data-id="${item.id}">删除</button>
+              <div>
+                <button class="btn small" data-edit="${item.id}">编辑</button>
+                <button class="btn small secondary" data-id="${item.id}">删除</button>
+              </div>
             </div>
           </article>
         `)
@@ -83,6 +86,26 @@
           if (item.url) window.open(item.url, "_blank");
         };
         card.style.cursor = "pointer";
+      });
+
+      list.querySelectorAll("button[data-edit]").forEach((btn) => {
+        btn.onclick = () => {
+          const id = Number(btn.dataset.edit);
+          const item = db.products.find((x) => x.id === id);
+          if (!item) return;
+          const title = prompt("产品名：", item.title) ?? item.title;
+          const url = prompt("链接：", item.url || "") ?? item.url;
+          const desc = prompt("简介：", item.desc || "") ?? item.desc;
+          const tagsRaw = prompt("标签（逗号分隔）：", (item.tags || []).join(",")) ?? (item.tags || []).join(",");
+          if (!String(title).trim() || !String(url).trim()) return alert("产品名和链接不能为空");
+          item.title = String(title).trim();
+          item.url = String(url).trim();
+          item.desc = String(desc || "").trim();
+          item.tags = String(tagsRaw || "").split(",").map((x) => x.trim()).filter(Boolean);
+          saveDB(db);
+          renderTags();
+          renderList();
+        };
       });
 
       list.querySelectorAll("button[data-id]").forEach((btn) => {
