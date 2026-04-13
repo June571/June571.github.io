@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的 AI 产品收藏库</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+      max-width: 1200px; margin: 0 auto; padding: 20px; background: #f8f9fa;
+    }
+    h1 { color: #2d3748; margin-bottom: 24px; text-align: center; }
+    .search { 
+      width: 100%; padding: 12px 16px; font-size: 16px; border: 1px solid #e2e8f0; 
+      border-radius: 8px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .filter-tags { margin-bottom: 20px; text-align: center; }
+    .filter-tag { 
+      display: inline-block; padding: 6px 12px; margin: 0 4px 8px 0; 
+      border-radius: 20px; background: #e2e8f0; cursor: pointer; transition: all 0.2s;
+    }
+    .filter-tag.active { background: #3182ce; color: white; }
+    .item { 
+      background: white; border: 1px solid #e2e8f0; padding: 20px; margin: 12px 0; 
+      border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;
+    }
+    .item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .item h3 { color: #2d3748; margin-bottom: 8px; font-size: 1.2rem; }
+    .item p { color: #4a5568; margin-bottom: 6px; line-height: 1.5; }
+    .item a { color: #3182ce; text-decoration: none; }
+    .item a:hover { text-decoration: underline; }
+    .tags { margin-top: 12px; }
+    .tag { 
+      display: inline-block; background: #ebf8ff; color: #2c5282; padding: 4px 10px; 
+      border-radius: 16px; font-size: 0.85rem; margin-right: 6px; margin-bottom: 6px;
+    }
+    .tag.open-source { background: #f0fff4; color: #22543d; }
+    .tag.closed-source { background: #fff5f5; color: #742a2a; }
+  </style>
+</head>
+<body>
+  <h1>📦 我的 AI 产品管理库</h1>
+  <input class="search" id="search" placeholder="🔍 搜索 AI 产品（名称、特点、标签）..." oninput="filter()">
+
+  <div class="filter-tags">
+    <span class="filter-tag active" data-filter="all">全部</span>
+    <span class="filter-tag" data-filter="开源">开源</span>
+    <span class="filter-tag" data-filter="闭源">闭源</span>
+    <span class="filter-tag" data-filter="大模型">大模型</span>
+    <span class="filter-tag" data-filter="AI绘画">AI绘画</span>
+    <span class="filter-tag" data-filter="AI写作">AI写作</span>
+    <span class="filter-tag" data-filter="AI工具">AI工具</span>
+  </div>
+
+  <div id="list">
+    <!-- 👇 你只需要在这里复制粘贴，新增你的AI产品！👇 -->
+    <div class="item" data-tags="闭源,大模型">
+      <h3>ChatGPT</h3>
+      <p>类型：闭源 / 大模型</p>
+      <p>特点：OpenAI 出品，最强通用对话AI，支持多模态</p>
+      <p>链接：<a href="https://chat.openai.com" target="_blank">https://chat.openai.com</a></p>
+      <div class="tags">
+        <span class="tag closed-source">闭源</span>
+        <span class="tag">大模型</span>
+      </div>
+    </div>
+
+    <div class="item" data-tags="开源,大模型">
+      <h3>Llama 3</h3>
+      <p>类型：开源 / 大模型</p>
+      <p>特点：Meta 开源，可本地部署，性能强劲</p>
+      <div class="tags">
+        <span class="tag open-source">开源</span>
+        <span class="tag">大模型</span>
+      </div>
+    </div>
+
+    <div class="item" data-tags="闭源,AI绘画">
+      <h3>Midjourney</h3>
+      <p>类型：闭源 / AI绘画</p>
+      <p>特点：最强AI绘画工具，出图质量高，社区活跃</p>
+      <p>链接：<a href="https://www.midjourney.com" target="_blank">https://www.midjourney.com</a></p>
+      <div class="tags">
+        <span class="tag closed-source">闭源</span>
+        <span class="tag">AI绘画</span>
+      </div>
+    </div>
+    <!-- 👆 复制上面的item块，填你的产品就行！👆 -->
+  </div>
+
+  <script>
+    // 搜索+筛选功能
+    function filter() {
+      const searchText = document.getElementById("search").value.toLowerCase();
+      const activeFilter = document.querySelector(".filter-tag.active").dataset.filter;
+      const items = document.querySelectorAll(".item");
+
+      items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        const tags = item.dataset.tags;
+        const matchSearch = text.includes(searchText);
+        const matchFilter = activeFilter === "all" || tags.includes(activeFilter);
+        
+        item.style.display = (matchSearch && matchFilter) ? "block" : "none";
+      });
+    }
+
+    // 标签筛选点击事件
+    document.querySelectorAll(".filter-tag").forEach(tag => {
+      tag.addEventListener("click", () => {
+        document.querySelectorAll(".filter-tag").forEach(t => t.classList.remove("active"));
+        tag.classList.add("active");
+        filter();
+      });
+    });
+  </script>
+</body>
+</html>
